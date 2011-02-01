@@ -1,0 +1,237 @@
+<html>
+	<head>
+		<script>
+		var speed = 25;
+		
+		var WIDTH = 25;
+		var HEIGHT = 25;
+
+		var picobot = [4, 22];
+		var picobot_animation = 'red';
+		var picobot_animation_frame = 0;
+		var picobot_cell;
+
+		var world;
+
+		var Direction = {
+			UP : "up",
+			DOWN : "down",
+			LEFT : "left",
+			RIGHT : "right"
+		}
+
+		var State = {
+			IDLE : "idle",
+			MOVING : "moving",
+		}
+
+		var state = State.IDLE;
+		var movingDirection = Direction.UP;
+		var updateTimer = "";
+
+		var Color = {
+			RED : "red",
+	  		GREEN: "green"
+		}
+
+		function evaluatePicobotPosition() {
+			var i = picobot[1] * WIDTH + picobot[0];
+			var cell = document.getElementById('cell_' + i);
+
+			cell.src = "img/empty_cleared.png";
+		}
+	
+		function changePicobotColor(color) {
+			picobot_animation = color;
+			picobot_cell.style.backgroundImage = "url('img/" + color + ".gif')"
+		}
+
+		function createWorld() {
+			world = document.getElementById('world');
+			
+			var world_box_HTML = "";
+			
+			for(i = 0; i < WIDTH*HEIGHT; i++) {
+				world_box_HTML = world_box_HTML + '<img id="cell_' + i + '" src="img/empty_uncleared.png" class="cell"/>'
+			}
+			world.innerHTML = world_box_HTML + '<div id="picobot" class="picobot_cell"></div>';
+
+			picobot_cell = document.getElementById('picobot');
+			picobot_cell.style.top = picobot[1] * 20 + 10;
+			picobot_cell.style.left = picobot[0] * 20 + 10;
+		}
+
+		function nudgePicobot(direction) {
+			var startAgain = false;
+			if (updateTimer != "") {
+				startAgain = true;
+				stopPicobot();
+			}
+
+			movePicobot(direction);
+
+			picobot_cell.style.top = picobot[1] * 20 + 10;
+			picobot_cell.style.left = picobot[0] * 20 + 10;
+			state = State.IDLE;
+
+			evaluatePicobotPosition();
+
+			if (startAgain) {
+				startPicobot();
+			}
+		}
+
+		function movePicobot(direction) {
+			moved = false;
+			if(direction == Direction.UP) {
+				if (picobot[1] > 0) {
+					picobot[1]--;
+					moved = true;
+				}
+			}
+			else if (direction == Direction.DOWN) {
+				if (picobot[1] < HEIGHT-1) {
+					picobot[1]++;
+					moved = true;
+				}
+			}
+			else if (direction == Direction.LEFT) {
+				if (picobot[0] > 0) {
+					picobot[0]--;
+					moved = true;
+				}
+			}
+			else { /* Direction.RIGHT */
+				if (picobot[0] < WIDTH-1) {
+					picobot[0]++;
+					moved = true;
+				}
+			}
+
+			if (moved) {
+				state = State.MOVING;
+				movingDirection = direction;
+			}
+			else {
+				state = State.IDLE;
+			}
+		}
+
+		function initialize() {
+			createWorld();
+
+			startPicobot();
+		}
+	
+		function startPicobot() {
+			updateTimer = window.setInterval("update()", speed);
+		}
+
+		function stopPicobot() {
+			window.clearInterval(updateTimer);
+			updateTimer = "";
+
+			picobot_cell.style.top = picobot[1] * 20 + 10;
+			picobot_cell.style.left = picobot[0] * 20 + 10;
+			state = State.IDLE;
+
+			evaluatePicobotPosition();
+		}
+
+		var i = 0;
+		function update() {
+
+			// Smooth movement code:
+			if (state == State.MOVING) {
+				current_top = parseInt(picobot_cell.style.top);
+				current_left = parseInt(picobot_cell.style.left);
+				new_value = 0;
+				if (movingDirection == Direction.UP) {
+					new_value = current_top - 5;
+					picobot_cell.style.top = new_value;
+				}
+				else if (movingDirection == Direction.DOWN) {
+					new_value = current_top + 5;
+					picobot_cell.style.top = new_value;
+				}
+				else if (movingDirection == Direction.LEFT) {
+					new_value = current_left - 5;
+					picobot_cell.style.left = new_value;
+				}
+				else if (movingDirection == Direction.RIGHT) {
+					new_value = current_left + 5;
+					picobot_cell.style.left = new_value;
+				}
+
+				if (new_value % 20 == 10) {
+					state = State.IDLE;
+
+					evaluatePicobotPosition();
+				}
+			}
+			else {
+				if (i % 2) {
+					movePicobot(Direction.UP);
+					if (picobot[1] == 0) {
+						i++;
+					}
+				}
+				else {
+					movePicobot(Direction.DOWN);
+					if (picobot[1] == HEIGHT-1) {
+						i++;
+					}
+				}
+			}
+		}
+		</script>
+		
+		<style>
+			.picobot_cell {
+				position: absolute;
+
+				left: 70px;
+				top: 50px;
+				
+				width: 20px;
+				height: 20px;
+
+				background-image: url('img/red.gif');
+				z-index: 0;
+			}
+			
+			.world_box {
+				width: 500px;
+				height: 500px;
+
+				background-image: url('img/world_bg.png');
+
+				border: 2px gray solid;
+			}
+
+			.cell {
+				width:20px;
+				height:20px;
+
+				z-index: -1;
+			}
+
+			img {
+				margin: 0;
+				padding: 0;
+			}
+		</style>
+	</head>
+	<body onload="initialize()">
+		<div class="world_box" id="world"></div>
+		<div>
+			<button onclick="nudgePicobot(Direction.UP)">Up</button> | <button onclick="nudgePicobot(Direction.DOWN)">Down</button> |
+			<button onclick="nudgePicobot(Direction.LEFT)">Left</button> | <button onclick="nudgePicobot(Direction.RIGHT)">Right</button> |
+			<button onclick="startPicobot()">Start</button> | <button onclick="stopPicobot()">Stop</button>
+
+			<br/>
+
+			<button onclick="changePicobotColor(Color.RED)">Red</button> | <button onclick="changePicobotColor(Color.GREEN)">Green</button>
+		</div>
+	</body>
+</html>
